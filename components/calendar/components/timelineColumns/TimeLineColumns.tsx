@@ -110,9 +110,6 @@ export const TimeLineColumns = ({
                 backgroundSize: `${subdivPx}px 100%`,
                 backgroundImage:
                   "linear-gradient(to right, transparent calc(100% - 1px), #e5e7eb 1px)",
-                //Linea divisora de final del dia
-                borderRight:
-                  hIdx === totalHours - 1 ? "2px solid #ccc" : undefined,
               }}
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();

@@ -19,23 +19,28 @@ import { generateColumns } from "./utils/columns";
 import { managerConfig, tasks as initialTasks } from "./data/index";
 import { HOUR_COLUMN_WIDTH, USER_COL_WIDTH } from "./constants";
 import { TableComponent, Tbody, Td, Thead, Tr } from "./components/table";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
+
 export const Table: React.FC = () => {
+  // tareas y mdoal
   const [tasks, setTasks] = useState<TaskDefinition[]>(initialTasks);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalInfo, setModalInfo] = useState({ userId: "", date: "", hour: 0 });
 
   // Fecha / vista / scroll
   const [baseDate, setBaseDate] = useState(new Date());
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set()
+  );
   const [displayedDate, setDisplayedDate] = useState(new Date());
   const [daysToShow, setDaysToShow] = useState(managerConfig.days_to_show);
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [loadingMore, setLoadingMore] = useState(false);
 
   const toggleSection = useCallback((sectionId: string) => {
-    setCollapsedSections(prev => {
+    setCollapsedSections((prev) => {
       const copy = new Set(prev);
       if (copy.has(sectionId)) copy.delete(sectionId);
       else copy.add(sectionId);
@@ -49,9 +54,12 @@ export const Table: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const firstHourTh = useRef<HTMLTableCellElement>(null);
   const slotWidth = HOUR_COLUMN_WIDTH;
-  const [sH, sM] = managerConfig.start_time.split(":" ).map(Number);
-  const [eH] = managerConfig.end_time.split(":" ).map(Number);
-  const { sensors, snapModifier } = useDndSensors(slotWidth, managerConfig.resize_division);
+  const [sH, sM] = managerConfig.start_time.split(":").map(Number);
+  const [eH] = managerConfig.end_time.split(":").map(Number);
+  const { sensors, snapModifier } = useDndSensors(
+    slotWidth,
+    managerConfig.resize_division
+  );
   const { activeTask, dragHandlers } = useTaskDragHandlers({
     tasks,
     setTasks,
@@ -62,8 +70,8 @@ export const Table: React.FC = () => {
 
   // --- Acción: mover/editar/estado ---
   const handleResize = useCallback((id: string, timing: Timing) => {
-    setTasks(ts =>
-      ts.map(t =>
+    setTasks((ts) =>
+      ts.map((t) =>
         t.id !== id
           ? t
           : {
@@ -86,7 +94,6 @@ export const Table: React.FC = () => {
       )
     );
   }, []);
-
   // Eliminado handleDelete (no se usa)
 
   const handleAction = useCallback(
@@ -95,8 +102,8 @@ export const Table: React.FC = () => {
       action: "update" | "Iniciar" | "Pausa" | "Finalizar",
       payload?: Partial<TaskDefinition>
     ) => {
-      setTasks(ts =>
-        ts.map(t => {
+      setTasks((ts) =>
+        ts.map((t) => {
           if (t.id !== id) return t;
           switch (action) {
             case "update":
@@ -161,10 +168,13 @@ export const Table: React.FC = () => {
     const dayWidth = totalHours * slotWidth;
 
     const onScroll = () => {
-      if (!loadingMore && el.scrollLeft + el.clientWidth >= el.scrollWidth - 100) {
+      if (
+        !loadingMore &&
+        el.scrollLeft + el.clientWidth >= el.scrollWidth - 100
+      ) {
         setLoadingMore(true);
         timer = setTimeout(() => {
-          setDaysToShow(n => n + 1);
+          setDaysToShow((n) => n + 1);
           setLoadingMore(false);
         }, 800);
       }
@@ -209,7 +219,7 @@ export const Table: React.FC = () => {
         onNext={handleNext}
         onToday={handleToday}
         onViewChange={handleViewChange}
-        onDateChange={d => {
+        onDateChange={(d) => {
           setViewMode("day");
           setDaysToShow(1);
           setBaseDate(d);
@@ -224,6 +234,19 @@ export const Table: React.FC = () => {
           </div>
         )}
         <div ref={containerRef} className="overflow-x-auto relative">
+          {Array.from({ length: daysToShow + 1 }).map((_, i) => {
+            const totalHours = eH - sH + 1;
+            const dayWidth = totalHours * slotWidth;
+            return (
+              <div
+                key={i}
+                className="absolute border-s-purple-500 border-dashed border-1 top-0 bottom-0 z-10 select-none"
+                style={{
+                  left: USER_COL_WIDTH + i * dayWidth,
+                }}
+              />
+            );
+          })}
           <CurrentTimeIndicator
             startHour={sH + sM / 60}
             endHour={eH}
@@ -255,7 +278,10 @@ export const Table: React.FC = () => {
               )}
             </DragOverlay>
 
-            <TableComponent className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
+            <TableComponent
+              className="min-w-full border-separate"
+              style={{ borderSpacing: 0 }}
+            >
               <Thead>
                 <Tr>
                   {columns.map((col, i) => (
@@ -273,12 +299,15 @@ export const Table: React.FC = () => {
                 </Tr>
               </Thead>
               <Tbody>
-                {managerConfig.sections.map(section => {
+                {managerConfig.sections.map((section) => {
                   const isCollapsed = collapsedSections.has(section.id);
                   return (
                     <React.Fragment key={section.id}>
-                      <Tr className="bg-slate-200 uppercase font-medium">
-                        <Td colSpan={columns.length} className="px-2 py-1 text-lg">
+                      <Tr className="bg-slate-200 uppercase font-medium  ">
+                        <Td
+                          colSpan={columns.length}
+                          className="px-2 py-1 text-lg border-1 border-slate-300"
+                        >
                           <div className="flex items-center gap-2">
                             <span>{section.name}</span>
                             {isCollapsed ? (
@@ -297,35 +326,47 @@ export const Table: React.FC = () => {
                           </div>
                         </Td>
                       </Tr>
-                      {!isCollapsed &&
-                        rows
-                      .filter((r) => r.sectionId === section.id)
-                      .map((row) => (
-                        <Tr key={row.userId} className="bg-gray-50">
-                          {columns.map((col, idx) =>
-                            idx === 0
-                              ? React.cloneElement(
-                                  col.renderCell(row) as React.ReactElement,
-                                  {
-                                    ...(React.isValidElement(
-                                      col.renderCell(row)
-                                    ) && col.renderCell(row).props.className
-                                      ? {
-                                          className:
-                                            col.renderCell(row).props
-                                              .className +
-                                            " sticky left-0 z-10 bg-white",
+                      <AnimatePresence initial={false}>
+                        {!isCollapsed &&
+                          rows
+                            .filter((r) => r.sectionId === section.id)
+                            .map((row) => (
+                              <motion.tr
+                                key={row.userId}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="bg-gray-50"
+                              >
+                                {columns.map((col, idx) =>
+                                  idx === 0
+                                    ? React.cloneElement(
+                                        col.renderCell(
+                                          row
+                                        ) as React.ReactElement,
+                                        {
+                                          ...(React.isValidElement(
+                                            col.renderCell(row)
+                                          ) &&
+                                          col.renderCell(row).props.className
+                                            ? {
+                                                className:
+                                                  col.renderCell(row).props
+                                                    .className +
+                                                  " sticky left-0 z-10 bg-white",
+                                              }
+                                            : {
+                                                className:
+                                                  "sticky left-0 z-10 bg-white",
+                                              }),
                                         }
-                                      : {
-                                          className:
-                                            "sticky left-0 z-10 bg-white",
-                                        }),
-                                  }
-                                )
-                              : col.renderCell(row)
-                          )}
-                        </Tr>
-                      ))}
+                                      )
+                                    : col.renderCell(row)
+                                )}
+                              </motion.tr>
+                            ))}
+                      </AnimatePresence>
                     </React.Fragment>
                   );
                 })}
@@ -338,12 +379,12 @@ export const Table: React.FC = () => {
       <QuickTaskModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreate={task => {
+        onCreate={(task) => {
           // tipado User en users
-          const sec = managerConfig.sections.find(sec =>
-            (sec.users as User[]).some(u => u.UUID === task.asigned_to)
+          const sec = managerConfig.sections.find((sec) =>
+            (sec.users as User[]).some((u) => u.UUID === task.asigned_to)
           );
-          setTasks(ts => [...ts, { ...task, type: sec?.id ?? "" }]);
+          setTasks((ts) => [...ts, { ...task, type: sec?.id ?? "" }]);
         }}
         userId={modalInfo.userId}
         date={modalInfo.date}

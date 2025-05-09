@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatDateKey } from "../../helpers/dayUtils";
 
 export type ViewMode = "day" | "week" | "month";
 
@@ -57,7 +58,7 @@ export const TimelineNav: React.FC<Props> = ({
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="min-w-[120px] justify-start">
-                {currentDate.toISOString().slice(0, 10)}
+                {formatDateKey(currentDate)}
                 <CalendarIcon className="ml-6 h-4 w-4 text-gray-600" />
               </Button>
             </PopoverTrigger>
