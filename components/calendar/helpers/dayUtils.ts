@@ -1,4 +1,3 @@
-// src/helpers/dayUtils.ts
 
 /**
  * Devuelve el número de día (0 Domingo ... 6 Sábado)

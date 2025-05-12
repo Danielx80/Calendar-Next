@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { FC, KeyboardEvent, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,15 @@ import { X } from "lucide-react";
 interface TaskListProps {
   initialTasks?: string[];
   placeholder?: string;
+  title?: "";
   onTasksChange?: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export const TaskList: FC<TaskListProps> = ({
   initialTasks = [],
-  placeholder = "Nueva tarea…",
-  onTasksChange
+  placeholder = "Nueva subtareas",
+  title = "Agregar subtareas",
+  onTasksChange,
 }) => {
   const [tasks, setTasks] = useState<string[]>(initialTasks);
   const [input, setInput] = useState("");
@@ -29,12 +31,12 @@ export const TaskList: FC<TaskListProps> = ({
   const addTask = () => {
     const text = input.trim();
     if (!text) return;
-    setTasks(prev => [...prev, text]);
+    setTasks((prev) => [...prev, text]);
     setInput("");
   };
 
   const removeTask = (idx: number) => {
-    setTasks(prev => prev.filter((_, i) => i !== idx));
+    setTasks((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -45,31 +47,38 @@ export const TaskList: FC<TaskListProps> = ({
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-4">
+    <Card className="mb-2">
+      <CardContent className="space-y-3">
         <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <Label htmlFor="task-input">{placeholder}</Label>
+          <div className="flex-1 space-y-1">
+            <Label htmlFor="task-input" className="py-1">
+              {title}
+            </Label>
             <Input
               id="task-input"
               type="text"
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder={placeholder}
             />
           </div>
-          <Button onClick={addTask} disabled={!input.trim()}>Agregar</Button>
+          <Button onClick={addTask} disabled={!input.trim()}>
+            Agregar
+          </Button>
         </div>
 
-        <Separator/>
+        <Separator />
 
         {tasks.length === 0 ? (
           <p className="text-center text-sm text-gray-500">No hay tareas</p>
         ) : (
           <ul className="space-y-2">
             {tasks.map((t, i) => (
-              <li key={i} className="flex justify-between items-center px-2 py-1 rounded hover:bg-gray-100">
+              <li
+                key={i}
+                className="flex justify-between items-center px-2 rounded hover:bg-gray-100"
+              >
                 <span className="truncate">{t}</span>
                 <Button
                   variant="ghost"
@@ -77,7 +86,7 @@ export const TaskList: FC<TaskListProps> = ({
                   onClick={() => removeTask(i)}
                   aria-label="Eliminar tarea"
                 >
-                  <X className="h-4 w-4"/>
+                  <X className="h-4 w-4" />
                 </Button>
               </li>
             ))}

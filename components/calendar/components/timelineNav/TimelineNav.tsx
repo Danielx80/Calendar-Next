@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@radix-ui/react-toggle-group";
 import {
   Popover,
   PopoverTrigger,
@@ -11,6 +10,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDateKey } from "../../helpers/dayUtils";
+import { ButtonGroup } from "@/components/ui/ButtonGroup";
 
 export type ViewMode = "day" | "week" | "month";
 
@@ -42,6 +42,12 @@ export const TimelineNav: React.FC<Props> = ({
     .format(currentDate)
     .replace(/^\w/, (c) => c.toUpperCase());
 
+  const viewOptions = [
+    { label: "Día", value: "day" },
+    { label: "Semana", value: "week" },
+    { label: "Mes", value: "month" },
+  ];
+
   const handleToggle = (value: ViewMode) => {
     if (value === "day") onToday();
     else onViewChange(value);
@@ -54,7 +60,6 @@ export const TimelineNav: React.FC<Props> = ({
           <Button variant="outline" size="icon" onClick={onPrev}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="min-w-[120px] justify-start">
@@ -71,42 +76,16 @@ export const TimelineNav: React.FC<Props> = ({
               />
             </PopoverContent>
           </Popover>
-
           <Button variant="outline" size="icon" onClick={onNext}>
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
-
         <h2 className="text-lg font-semibold text-gray-700">{headerTitle}</h2>
-
-        <ToggleGroup
-          type="single"
+        <ButtonGroup
           value={viewMode}
-          onValueChange={handleToggle}
-          className="bg-white rounded-md p-1"
-        >
-          <ToggleGroupItem
-            value="day"
-            aria-label="Vista día"
-            className="px-3 py-1 rounded data-[state=on]:bg-black data-[state=on]:text-white"
-          >
-            Día
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="week"
-            aria-label="Vista semana"
-            className="px-3 py-1 rounded data-[state=on]:bg-black data-[state=on]:text-white"
-          >
-            Semana
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="month"
-            aria-label="Vista mes"
-            className="px-3 py-1 rounded data-[state=on]:bg-black data-[state=on]:text-white"
-          >
-            Mes
-          </ToggleGroupItem>
-        </ToggleGroup>
+          onChange={(val) => handleToggle(val as ViewMode)}
+          options={viewOptions}
+        />
       </div>
     </div>
   );

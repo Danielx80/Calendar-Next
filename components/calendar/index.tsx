@@ -89,7 +89,7 @@ export const Table: React.FC = () => {
           setModalOpen(true);
         }
       ),
-    [baseDate, daysToShow, handleResize, handleAction]
+    [baseDate, daysToShow, handleResize, handleAction, slotWidth]
   );
 
   // --- DnD setup ---
@@ -112,7 +112,11 @@ export const Table: React.FC = () => {
   const toggleSection = useCallback((sectionId: string) => {
     setCollapsedSections((prev) => {
       const copy = new Set(prev);
-      copy.has(sectionId) ? copy.delete(sectionId) : copy.add(sectionId);
+      if (copy.has(sectionId)) {
+        copy.delete(sectionId);
+      } else {
+        copy.add(sectionId);
+      }
       return copy;
     });
   }, []);
@@ -183,7 +187,6 @@ export const Table: React.FC = () => {
                 />
               )}
             </DragOverlay>
-          
 
             {/* Tabla principal */}
             <TableComponent
@@ -207,7 +210,6 @@ export const Table: React.FC = () => {
               </Thead>
 
               <Tbody>
-                {}
                 {managerConfig.sections.map((section) => {
                   const isCollapsed = collapsedSections.has(section.id);
                   return (
@@ -257,7 +259,7 @@ export const Table: React.FC = () => {
                                         ) as React.ReactElement,
                                         {
                                           className: `${
-                                            (col.renderCell(row) as any).props
+                                            col.renderCell(row).props
                                               .className || ""
                                           } sticky left-0 z-10 bg-white`,
                                         }

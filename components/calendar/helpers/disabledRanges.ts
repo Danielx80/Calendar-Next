@@ -1,4 +1,3 @@
-// src/helpers/toMinuteRange.ts
 import { TdDisabled } from "../types";
 
 type MinuteRangeInput =
