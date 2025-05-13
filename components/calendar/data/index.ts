@@ -1,7 +1,6 @@
 import { OPERATION_COLORS } from "../constants";
 import { TaskManager, TaskDefinition } from "../types";
 
-
 // --- Configuración del TaskManager y usuarios por sección ---
 export const managerConfig: TaskManager = {
   id: "UUID",

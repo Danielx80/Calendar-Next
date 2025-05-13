@@ -20,6 +20,7 @@ import { CurrentTimeIndicator } from "./utils/CurrentTimeIndicator";
 import { managerConfig, tasks as initialTasks } from "./data/index";
 import { HOUR_COLUMN_WIDTH, USER_COL_WIDTH } from "./constants";
 
+
 export const Table: React.FC = () => {
   const slotWidth = HOUR_COLUMN_WIDTH;
 

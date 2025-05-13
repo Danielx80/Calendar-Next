@@ -49,16 +49,8 @@ function formatLocalISO(d: Date): string {
 
 const options = [
   { label: "Iniciar", value: "iniciar", icon: <Play className="h-4 w-4" /> },
-  {
-    label: "Pausar",
-    value: "pausar",
-    icon: <CirclePause className="h-4 w-4" />,
-  },
-  {
-    label: "Detener",
-    value: "finalizar",
-    icon: <CircleStop className="h-4 w-4" />,
-  },
+  { label: "Pausar", value: "pausar", icon: <CirclePause className="h-4 w-4" /> },
+  { label: "Detener", value: "finalizar", icon: <CircleStop className="h-4 w-4" /> },
 ];
 
 export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
@@ -77,6 +69,7 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
   const [startInput, setStartInput] = useState("");
   const [endInput, setEndInput] = useState("");
   const [action, setAction] = useState<string>("");
+    const [subtasks, setSubtasks] = useState<string[]>([]);
 
   const operationOptions = [
     { label: "Mantenimiento", value: "mantenimiento" },
@@ -98,15 +91,18 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
   const handleActionChange = (value: string) => {
     setAction(value);
   };
+
   useEffect(() => {
     const start = new Date(`${date}T${String(hour).padStart(2, "0")}:00`);
     const end = new Date(start.getTime() + defaultDuration * 60000);
-    setStartInput(formatLocalISO(start));
-    setEndInput(formatLocalISO(end));
-    setOrderId("");
-    setOperationType("");
-    setDescription("");
-    setAssignedTo(userId);
+   setStartInput(formatLocalISO(start));
+      setEndInput(formatLocalISO(end));
+      setOrderId("");
+      setOperationType("");
+      setDescription("");
+      setAssignedTo(userId);
+      setSubtasks([]);
+      setAction("");
   }, [isOpen, date, hour, defaultDuration, userId]);
 
   const handleSubmit = (e: FormEvent) => {
@@ -121,7 +117,7 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
       id: uuidv4(),
       type: operationType,
       sub_type: operationType,
-      description: description || "",
+      description,
       asigned_to: assignedTo,
       start_at: startAt,
       end_at: endAt,
@@ -149,8 +145,10 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
         allow_subtasks: true,
         allow_time_tracking: true,
       },
-      custom_fields: {},
+      custom_fields: { subtasks },
+      subTask: []
     };
+
     onCreate(newTask);
     onClose();
   };
@@ -183,7 +181,7 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
               <div className="relative">
                 <Input
                   type="search"
-                  placeholder="15698 - APK598"
+                  placeholder="Buscar por Orden, VIN o Placa..."
                   className="pl-10"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-900" />
@@ -257,7 +255,11 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
                 </Select>
               </div>
 
-              <TaskList />
+              <TaskList
+                initialTasks={subtasks}
+                onTasksChange={setSubtasks}
+                placeholder="Subtareas..."
+              />
 
               <div className="space-y-1">
                 <Label>Descripción</Label>
@@ -303,7 +305,11 @@ export const QuickTaskModal: React.FC<QuickTaskModalProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>Comentarios o solicitudes adicionales</Label>
-                <Textarea />
+                <Textarea
+                value={description}
+                placeholder="Descripcion de la tarea o comentarios"
+                onChange={(e) => setDescription(e.target.value)}
+                />
               </div>
             </form>
           </TabsContent>

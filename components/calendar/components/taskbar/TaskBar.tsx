@@ -1,13 +1,12 @@
+// src/components/TaskBar.tsx
 "use client";
 
-import React, { useState, useEffect, FormEvent } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useDraggable } from "@dnd-kit/core";
 import type { TaskDefinition, Timing, User } from "../../types";
-import { useTaskDuration } from "./hooks/useTaskDuration";
 import { managerConfig } from "../../data";
-import { useTaskResize } from "./hooks/useTaskResize";
-import { useTaskPosition } from "./hooks/useTaskPosition";
+
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -39,11 +38,11 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { TaskList } from "../../../ui/TaskList";
-import {
-  formatDateTimeLocal,
-  formatTime,
-  parseTimeToDate,
-} from "../../helpers/dayUtils";
+import { useTaskPosition } from "./hooks/useTaskPosition";
+import { useTaskResize } from "./hooks/useTaskResize";
+import { useTaskDuration } from "./hooks/useTaskDuration";
+import { useTaskMenu } from "./hooks/useTaskMenu";
+import { useTaskForm } from "./hooks/useTaskForm";
 
 interface TaskBarProps {
   task: TaskDefinition;
@@ -76,51 +75,12 @@ export const TaskBar: React.FC<TaskBarProps> = ({
   overlapIndex = 0,
   rowHeightPx = 64,
 }) => {
-  // Submenú duración
-  const [editingSubmenu, setEditingSubmenu] = useState(false);
-  const [startTime, setStartTime] = useState(formatTime(task.start_at));
-  const [endTime, setEndTime] = useState(formatTime(task.end_at));
-
-  // Modal detalle
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [formDesc, setFormDesc] = useState(task.description);
-  const [formAssigned, setFormAssigned] = useState(task.asigned_to);
-  const [formStart, setFormStart] = useState(formatDateTimeLocal(task.start_at));
-  const [formEnd, setFormEnd] = useState(formatDateTimeLocal(task.end_at));
-  const [formComments, setFormComments] = useState("");
-  const [formSubtasks, setFormSubtasks] = useState<string[]>(
-    Array.isArray(task.custom_fields.subtasks)
-      ? task.custom_fields.subtasks
-      : []
-  );
-
-  useEffect(() => {
-    if (editingSubmenu) {
-      setStartTime(formatTime(task.start_at));
-      setEndTime(formatTime(task.end_at));
-    }
-  }, [editingSubmenu, task]);
-
-  useEffect(() => {
-    if (detailOpen) {
-      setFormDesc(task.description);
-      setFormAssigned(task.asigned_to);
-      setFormStart(formatDateTimeLocal(task.start_at));
-      setFormEnd(formatDateTimeLocal(task.end_at));
-      setFormComments("");
-      setFormSubtasks(
-        Array.isArray(task.custom_fields.subtasks)
-          ? task.custom_fields.subtasks
-          : []
-      );
-    }
-  }, [detailOpen, task]);
-
-  // Draggable (llamado siempre, no condicional)
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task.id,
-    disabled: isOverlay,
-  });
+  // Draggable
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: task.id,
+      disabled: isOverlay,
+    });
 
   // Posición & resize
   const { leftPx, widthPx, setDims, pxToSlots, slotsToMin, snapPx } =
@@ -137,7 +97,7 @@ export const TaskBar: React.FC<TaskBarProps> = ({
     managerConfig,
   });
 
-  // Estilos & etiquetas
+  // Etiquetas y estilos
   const duration = useTaskDuration(task);
   const section = managerConfig.sections.find((s) => s.id === task.type);
   const sectionColor = section?.color ?? "transparent";
@@ -149,6 +109,7 @@ export const TaskBar: React.FC<TaskBarProps> = ({
   };
   const labelStatus = statusLabels[task.status] ?? task.status;
 
+  // Calcular superposición
   const GAP = 4;
   const totalGap = (overlapCount - 1) * GAP;
   const barHeight = (rowHeightPx - totalGap) / overlapCount;
@@ -167,35 +128,18 @@ export const TaskBar: React.FC<TaskBarProps> = ({
     zIndex: isOverlay ? 30 : 10,
   };
 
-  // Guarda cambio del submenú
-  const handleResizeSave = () => {
-    const newStart = parseTimeToDate(task.start_at, startTime);
-    const newEnd = parseTimeToDate(task.end_at, endTime);
-    onResize?.(task.id, {
-      startHour: newStart.getHours(),
-      startMinute: newStart.getMinutes(),
-      endHour: newEnd.getHours(),
-      endMinute: newEnd.getMinutes(),
-    });
-    setEditingSubmenu(false);
-  };
+  // Hooks extraídos
+  const menu = useTaskMenu({ task, onResize, onAction, onDelete });
+  const form = useTaskForm({ task, onAction });
 
-  // Guarda cambios del dialog
-  const handleSaveDetail = (e: FormEvent) => {
-    e.preventDefault();
-    onAction?.(task.id, "update", {
-      description: formDesc,
-      asigned_to: formAssigned,
-      start_at: new Date(formStart),
-      end_at: new Date(formEnd),
-      custom_fields: { subtasks: formSubtasks },
-      comments: formComments,
-    });
-    setDetailOpen(false);
-  };
+  // Conteo de subtareas
+  const subtasksCount = Array.isArray(task.custom_fields.subtasks)
+    ? task.custom_fields.subtasks.length
+    : 0;
 
   return (
     <>
+      {/* Menú contextual */}
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <motion.div
@@ -208,10 +152,7 @@ export const TaskBar: React.FC<TaskBarProps> = ({
               e.stopPropagation();
               onClick?.();
             }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setDetailOpen(true);
-            }}
+            onDoubleClick={() => form.setDetailOpen(true)}
             title={`${task.text_to_show} — ${duration} — ${labelStatus}`}
             style={style}
             className={`select-none rounded-sm ${
@@ -222,9 +163,10 @@ export const TaskBar: React.FC<TaskBarProps> = ({
               <span className="truncate font-bold text-[13px] uppercase">
                 {task.text_to_show}
               </span>
-              <Badge className="absolute right-3">
-                {task.custom_fields.subtasks?.length ?? 0}
-              </Badge>
+              {/* Badge solo si hay subtareas */}
+              {subtasksCount > 0 && (
+                <Badge className="absolute right-3">{subtasksCount}</Badge>
+              )}
               <span className="text-[12px] font-semibold">{duration}</span>
               <span className="absolute bottom-0 right-0 px-2 py-1 text-[12px] font-medium uppercase">
                 {labelStatus}
@@ -251,59 +193,59 @@ export const TaskBar: React.FC<TaskBarProps> = ({
           <ContextMenuLabel>Acciones</ContextMenuLabel>
 
           <ContextMenuSub>
-            <ContextMenuSubTrigger onClick={() => setEditingSubmenu(true)}>
+            <ContextMenuSubTrigger onClick={() => menu.setEditingSubmenu(true)}>
               Ajustar duración
             </ContextMenuSubTrigger>
-            <ContextMenuSubContent className="p-3">
-              <div className="space-y-2">
+            {menu.editingSubmenu && (
+              <ContextMenuSubContent className="p-3 space-y-2">
                 <div>
                   <Label className="text-sm">Inicio</Label>
                   <Input
                     type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    value={menu.startTime}
+                    onChange={(e) => menu.setStartTime(e.target.value)}
                   />
                 </div>
                 <div>
                   <Label className="text-sm">Fin</Label>
                   <Input
                     type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
+                    value={menu.endTime}
+                    onChange={(e) => menu.setEndTime(e.target.value)}
                   />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setEditingSubmenu(false)}
+                    onClick={() => menu.setEditingSubmenu(false)}
                   >
                     Cancelar
                   </Button>
-                  <Button size="sm" onClick={handleResizeSave}>
+                  <Button size="sm" onClick={menu.handleResizeSave}>
                     Guardar
                   </Button>
                 </div>
-              </div>
-            </ContextMenuSubContent>
+              </ContextMenuSubContent>
+            )}
           </ContextMenuSub>
 
           <ContextMenuSeparator />
 
-          <ContextMenuItem onSelect={() => onAction?.(task.id, "Iniciar")}>
+          <ContextMenuItem onSelect={menu.handleStartAction}>
             Iniciar
           </ContextMenuItem>
-          <ContextMenuItem onSelect={() => onAction?.(task.id, "Pausa")}>
+          <ContextMenuItem onSelect={menu.handlePauseAction}>
             Pausar
           </ContextMenuItem>
-          <ContextMenuItem onSelect={() => onAction?.(task.id, "Finalizar")}>
+          <ContextMenuItem onSelect={menu.handleFinishAction}>
             Finalizar
           </ContextMenuItem>
 
           <ContextMenuSeparator />
 
           <ContextMenuItem
-            onSelect={() => onDelete?.(task.id)}
+            onSelect={menu.handleDelete}
             className="text-destructive"
           >
             Eliminar
@@ -311,19 +253,19 @@ export const TaskBar: React.FC<TaskBarProps> = ({
         </ContextMenuContent>
       </ContextMenu>
 
-      {/* Dialog de detalle al doble clic */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      {/* Diálogo de detalle */}
+      <Dialog open={form.detailOpen} onOpenChange={form.setDetailOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Detalles de la tarea</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSaveDetail} className="space-y-4 pt-2">
+          <form onSubmit={form.handleSave} className="space-y-4 pt-2">
             <div>
               <Label htmlFor="desc">Descripción</Label>
               <Input
                 id="desc"
-                value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
+                value={form.formDesc}
+                onChange={(e) => form.setFormDesc(e.target.value)}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -332,8 +274,8 @@ export const TaskBar: React.FC<TaskBarProps> = ({
                 <Input
                   id="start"
                   type="datetime-local"
-                  value={formStart}
-                  onChange={(e) => setFormStart(e.target.value)}
+                  value={form.formStart}
+                  onChange={(e) => form.setFormStart(e.target.value)}
                 />
               </div>
               <div>
@@ -341,24 +283,24 @@ export const TaskBar: React.FC<TaskBarProps> = ({
                 <Input
                   id="end"
                   type="datetime-local"
-                  value={formEnd}
-                  onChange={(e) => setFormEnd(e.target.value)}
+                  value={form.formEnd}
+                  onChange={(e) => form.setFormEnd(e.target.value)}
                 />
               </div>
             </div>
             <div>
               <Label>Asignar a</Label>
               <Select
-                defaultValue={formAssigned}
-                onValueChange={(v) => setFormAssigned(v)}
+                defaultValue={form.formAssigned}
+                onValueChange={(v) => form.setFormAssigned(v)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona usuario" />
                 </SelectTrigger>
                 <SelectContent>
                   {managerConfig.sections
-                    .flatMap(s => s.users as User[])
-                    .map((u: User) => (
+                    .flatMap((s) => s.users as User[])
+                    .map((u) => (
                       <SelectItem key={u.UUID} value={u.UUID}>
                         {u.name}
                       </SelectItem>
@@ -369,25 +311,28 @@ export const TaskBar: React.FC<TaskBarProps> = ({
             <div>
               <Label>Subtareas</Label>
               <TaskList
-                initialTasks={formSubtasks}
+                initialTasks={form.formSubtasks}
                 placeholder="Subtarea…"
-                onTasksChange={setFormSubtasks}
+                onTasksChange={form.setFormSubtasks}
               />
             </div>
             <div>
               <Label htmlFor="comments">Comentarios</Label>
               <Textarea
                 id="comments"
-                value={formComments}
-                onChange={(e) => setFormComments(e.target.value)}
+                value={form.formComments}
+                onChange={(e) => form.setFormComments(e.target.value)}
               />
             </div>
           </form>
           <DialogFooter className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setDetailOpen(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => form.setDetailOpen(false)}
+            >
               Cerrar
             </Button>
-            <Button onClick={handleSaveDetail}>Guardar</Button>
+            <Button onClick={form.handleSave}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

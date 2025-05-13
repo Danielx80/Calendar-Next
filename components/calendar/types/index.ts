@@ -59,6 +59,13 @@ export interface TaskDefinition {
   text_to_show: string;
   config: Config;
   custom_fields: CustomFields;
+  subTask?: SubTastk[];
+}
+
+export interface SubTastk {
+  id: string;
+  label: string;
+  isFinished: boolean;
 }
 
 export interface CustomFields {
@@ -126,7 +133,7 @@ export interface Row {
   avatarUrl?: string;
   disabledRanges?: TdDisabled[];
   tasks: TaskDefinition[];
- [key: string]:
+  [key: string]:
     | string
     | number
     | boolean
